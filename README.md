@@ -12,6 +12,7 @@ It automates the installation and configuration of:
 ## Prerequisites
 
 This setup requires:
+
 ![alt text](Untitled-2026-06-01-0703.png)
 - **1 Jumpbox / Ansible Server** (Optional: You can run Ansible commands directly from your local machine instead)
 - **1 Control Plane** (Master Node)
