@@ -1,0 +1,12 @@
+# l2-advertisement.yaml
+# Tells MetalLB to announce IPs from default-pool using Layer 2 (ARP)
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-l2
+  namespace: metallb-system
+spec:
+  # Bind this advertisement to specific pools
+  # Omit ipAddressPools to advertise all pools
+  ipAddressPools:
+    - default-pool

@@ -1,0 +1,6 @@
+---
+- name: Install Calico CNI
+  hosts: control_plane
+  become: yes
+  roles:
+    - calico

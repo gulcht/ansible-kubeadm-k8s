@@ -1,0 +1,50 @@
+---
+- name: Check cluster state
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeconfig
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+- name: Init Kubernetes control-plane
+  command: >
+    kubeadm init
+    --pod-network-cidr=192.168.0.0/16
+    --cri-socket=unix:///run/containerd/containerd.sock
+  when: not kubeconfig.stat.exists
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+- name: Setup kubeconfig
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0700'
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+- name: Copy kubeconfig
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+- name: Get join command
+  shell: kubeadm token create --print-join-command
+  register: join_cmd
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+- name: Check if worker already joined
+  shell: kubectl get nodes {{ inventory_hostname }}
+  register: node_check
+  failed_when: false
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+- name: Join worker nodes
+  shell: "{{ join_cmd.stdout }} --ignore-preflight-errors=all"
+  when:
+    - inventory_hostname in groups['workers']
+    - node_check.rc != 0

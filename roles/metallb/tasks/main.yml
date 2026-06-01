@@ -1,0 +1,72 @@
+---
+
+# Enable strictARP in kube-proxy
+- name: Enable strictARP in kube-proxy
+  shell: |
+    kubectl get configmap kube-proxy -n kube-system -o yaml | \
+    sed -e "s/strictARP: false/strictARP: true/" | \
+    kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  run_once: true
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+- name: Restart kube-proxy daemonset
+  shell: |
+    kubectl rollout restart daemonset kube-proxy -n kube-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  run_once: true
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+- name: Wait for kube-proxy rollout
+  shell: |
+    kubectl rollout status daemonset kube-proxy -n kube-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  run_once: true
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+# Install MetalLB manifests
+- name: Install MetalLB base manifest
+  shell: |
+    METALLB_VERSION="v0.16.1"
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  run_once: true
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+# Clean old temp manifests
+# =====================================================
+- name: Clean old MetalLB temp directory
+  file:
+    path: /tmp/metallb
+    state: absent
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+# Copy manifests to control-plane first
+- name: Copy MetalLB manifests directory
+  copy:
+    src: metallb/
+    dest: /tmp/metallb/
+    mode: preserve
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+# Apply IPAddressPool
+- name: Apply MetalLB IPAddressPool
+  shell: kubectl apply -f /tmp/metallb/ip-address-pool.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true
+
+# Apply L2Advertisement
+- name: Apply MetalLB L2Advertisement
+  shell: kubectl apply -f /tmp/metallb/l2-advertisement.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  run_once: true

@@ -1,0 +1,15 @@
+---
+# Check kubeconfig exists
+- name: Check kubeconfig
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeconfig
+
+- name: Install Calico CNI
+  shell: |
+    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: kubeconfig.stat.exists
+  run_once: true
+  delegate_to: "{{ groups['control_plane'][0] }}"

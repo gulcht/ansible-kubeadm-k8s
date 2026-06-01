@@ -1,0 +1,6 @@
+---
+- name: Install Kubernetes tools
+  hosts: all
+  become: yes
+  roles:
+    - kubernetes

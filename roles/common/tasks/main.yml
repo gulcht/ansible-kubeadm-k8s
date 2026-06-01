@@ -1,0 +1,39 @@
+---
+- name: Disable swap (runtime)
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Disable swap permanently
+  replace:
+    path: /etc/fstab
+    regexp: '^\s*([^#].*\sswap\s)'
+    replace: '# \1'
+
+- name: Load kernel modules (overlay)
+  modprobe:
+    name: overlay
+
+- name: Load kernel modules (br_netfilter)
+  modprobe:
+    name: br_netfilter
+
+- name: Persist kernel modules
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+
+- name: Set sysctl - ip forward
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Set sysctl - bridge iptables
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: '1'
+    state: present
+    reload: yes

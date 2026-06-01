@@ -1,0 +1,6 @@
+---
+- name: Create Kubernetes Cluster (init + join)
+  hosts: all
+  become: yes
+  roles:
+    - kubeadm-cluster

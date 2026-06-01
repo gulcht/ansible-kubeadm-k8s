@@ -1,0 +1,6 @@
+---
+- name: Install MetalLB
+  hosts: control_plane
+  become: yes
+  roles:
+    - metallb
