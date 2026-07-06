@@ -9,7 +9,7 @@
 - name: Init Kubernetes control-plane
   command: >
     kubeadm init
-    --pod-network-cidr=192.168.0.0/16
+    --pod-network-cidr=10.244.0.0/16
     --cri-socket=unix:///run/containerd/containerd.sock
   when: not kubeconfig.stat.exists
   delegate_to: "{{ groups['control_plane'][0] }}"
@@ -44,7 +44,7 @@
   delegate_to: "{{ groups['control_plane'][0] }}"
 
 - name: Join worker nodes
-  shell: "{{ join_cmd.stdout }} --ignore-preflight-errors=all"
+  shell: "{{ join_cmd.stdout }}"
   when:
     - inventory_hostname in groups['workers']
     - node_check.rc != 0
